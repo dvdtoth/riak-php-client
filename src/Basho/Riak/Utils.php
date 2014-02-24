@@ -66,7 +66,7 @@ class Utils
     public static function buildRestPath($client, $bucket = null, $key = null, $spec = null, $params = null)
     {
         # Build 'http://hostname:port/prefix/bucket'
-        $path = 'http://';
+        $path = $client->protocol . '://';
         $path .= $client->host . ':' . $client->port;
         $path .= '/' . $client->prefix;
 
@@ -126,7 +126,7 @@ class Utils
     public static function buildIndexPath(Riak $client, Bucket $bucket, $index, $start, $end = null)
     {
         # Build 'http://hostname:port/prefix/bucket'
-        $path = array('http:/', $client->host . ':' . $client->port, $client->indexPrefix);
+        $path = array($client->protocol . ':/', $client->host . ':' . $client->port, $client->indexPrefix);
 
         # Add '.../bucket'
         $path[] = urlencode($bucket->name);
@@ -159,12 +159,24 @@ class Utils
      *
      * @return array
      */
-    public static function httpRequest($method, $url, $request_headers = array(), $obj = '')
+    public static function httpRequest($client, $method, $url, $request_headers = array(), $obj = '')
     {
         # Set up curl
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $request_headers);
+
+        # Add SSL support
+        if ($client->protocol == 'https') {
+          curl_setopt($ch, CURLOPT_SSLCERT, $client->client_cert);
+          curl_setopt($ch, CURLOPT_SSLKEY, $client->client_key);
+          # Set CA certificate if self-signed
+          if (!empty($client->client_cert_path)) {
+            curl_setopt($ch, CURLOPT_CAINFO, $client->ca_cert);
+          }
+          # Make sure we're not caching the connection
+          // curl_setopt($ch, CURLOPT_FRESH_CONNECT, TRUE);
+        }
 
         if ($method == 'GET') {
             curl_setopt($ch, CURLOPT_HTTPGET, 1);
@@ -200,6 +212,13 @@ class Utils
             # Run the request.
             curl_exec($ch);
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            # Check for curl errors
+            $error_code = curl_errno($ch);
+            if ($error_code != 0) {
+              throw new Exception('CURL returned error code ' . $error_code);
+            }
+
             curl_close($ch);
 
             # Get the headers...

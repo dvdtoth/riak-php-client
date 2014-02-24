@@ -673,7 +673,7 @@ class Object
         $method = $this->key ? 'PUT' : 'POST';
 
         # Run the operation.
-        $response = Utils::httpRequest($method, $url, $headers, $content);
+        $response = Utils::httpRequest($this->client, $method, $url, $headers, $content);
         $this->populate($response, array(200, 201, 300));
 
         return $this;
@@ -696,7 +696,7 @@ class Object
         $r = $this->bucket->getR($r);
         $params = array('r' => $r);
         $url = Utils::buildRestPath($this->client, $this->bucket, $this->key, null, $params);
-        $response = Utils::httpRequest('GET', $url);
+        $response = Utils::httpRequest($this->client, 'GET', $url);
         $this->populate($response, array(200, 300, 404));
 
         # If there are siblings, load the data for the first one by default...
@@ -725,7 +725,7 @@ class Object
         $url = Utils::buildRestPath($this->client, $this->bucket, $this->key, null, $params);
 
         # Run the operation...
-        $response = Utils::httpRequest('DELETE', $url);
+        $response = Utils::httpRequest($this->client, 'DELETE', $url);
         $this->populate($response, array(204, 404));
 
         return $this;
@@ -791,7 +791,7 @@ class Object
 
         # Check if the server is down (status==0)
         if ($status == 0) {
-            $m = 'Could not contact Riak Server: http://' . $this->client->host . ':' . $this->client->port . '!';
+            $m = 'Could not contact Riak Server: ' . $this->client->protocol . '://' . $this->client->host . ':' . $this->client->port . '!';
             throw new Exception($m);
         }
 
@@ -942,7 +942,7 @@ class Object
         $vtag = $this->siblings[$i];
         $params = array('r' => $r, 'vtag' => $vtag);
         $url = Utils::buildRestPath($this->client, $this->bucket, $this->key, null, $params);
-        $response = Utils::httpRequest('GET', $url);
+        $response = Utils::httpRequest($this->client, 'GET', $url);
 
         # Respond with a new object...
         $obj = new Object($this->client, $this->bucket, $this->key);

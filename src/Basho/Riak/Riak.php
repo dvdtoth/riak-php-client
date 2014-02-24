@@ -31,18 +31,29 @@ use Basho\Riak\Bucket,
  */
 class Riak
 {
-    /**
-     * Construct a new Client object.
-     *
-     * @param string $host - Hostname or IP address (default '127.0.0.1')
-     * @param int $port - Port number (default 8098)
-     * @param string $prefix - Interface prefix (default "riak")
-     * @param string $mapred_prefix - MapReduce prefix (default "mapred")
-     */
-    public function __construct($host = '127.0.0.1', $port = 8098, $prefix = 'riak', $mapred_prefix = 'mapred')
+  /**
+   * Construct a new Client object.
+   *
+   * @param $connection array()
+   * host => Hostname or IP address (default '127.0.0.1')
+   * port => Port number (default 8098)
+   * protocol => http or https, (defaults to http)
+   * client_cert => client certificate for mutual SSL authentication
+   * client_key => client key for mutual SSL authentication
+   * ca_cert => CA certificate for self signed certificate
+   * @param string $prefix - Interface prefix (default "riak")
+   * @param string $mapred_prefix - MapReduce prefix (default "mapred")
+
+   */
+    public function __construct($connection, $prefix = 'riak', $mapred_prefix = 'mapred')
     {
-        $this->host = $host;
-        $this->port = $port;
+
+        $this->host = $connection['host'];
+        $this->port = $connection['port'];
+        $this->protocol = !empty($connection['protocol']) ? $connection['protocol'] : 'http';
+        $this->client_cert = !empty($connection['client_cert']) ? $connection['client_cert'] : '';
+        $this->client_key = !empty($connection['client_key']) ? $connection['client_key'] : '';
+        $this->ca_cert = !empty($connection['ca_cert']) ? $connection['ca_cert'] : '';
         $this->prefix = $prefix;
         $this->mapred_prefix = $mapred_prefix;
         $this->indexPrefix = 'buckets';
@@ -181,7 +192,7 @@ class Riak
     public function buckets()
     {
         $url = Utils::buildRestPath($this);
-        $response = Utils::httpRequest('GET', $url . '?buckets=true');
+        $response = Utils::httpRequest($this->client, 'GET', $url . '?buckets=true');
         $response_obj = json_decode($response[1]);
         $buckets = array();
         foreach ($response_obj->buckets as $name) {
@@ -198,8 +209,8 @@ class Riak
      */
     public function isAlive()
     {
-        $url = 'http://' . $this->host . ':' . $this->port . '/ping';
-        $response = Utils::httpRequest('GET', $url);
+        $url = $this->protocol . '://' . $this->host . ':' . $this->port . '/ping';
+        $response = Utils::httpRequest($this->client, 'GET', $url);
 
         return ($response != null) && ($response[1] == 'OK');
     }
