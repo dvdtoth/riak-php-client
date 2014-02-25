@@ -171,10 +171,10 @@ class Utils
 
           # Set client certs
           if (!empty($client->client_cert)) {
-          curl_setopt($ch, CURLOPT_SSLCERT, $client->client_cert);
+            curl_setopt($ch, CURLOPT_SSLCERT, $client->client_cert);
           }
           if (!empty($client->client_key)) {
-          curl_setopt($ch, CURLOPT_SSLKEY, $client->client_key);
+            curl_setopt($ch, CURLOPT_SSLKEY, $client->client_key);
           }
           # Set CA certificate if self-signed
           if (!empty($client->ca_cert)) {
