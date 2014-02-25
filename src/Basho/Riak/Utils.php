@@ -168,10 +168,16 @@ class Utils
 
         # Add SSL support
         if ($client->protocol == 'https') {
+
+          # Set client certs
+          if (!empty($client->client_cert)) {
           curl_setopt($ch, CURLOPT_SSLCERT, $client->client_cert);
+          }
+          if (!empty($client->client_key)) {
           curl_setopt($ch, CURLOPT_SSLKEY, $client->client_key);
+          }
           # Set CA certificate if self-signed
-          if (!empty($client->client_cert_path)) {
+          if (!empty($client->ca_cert)) {
             curl_setopt($ch, CURLOPT_CAINFO, $client->ca_cert);
           }
           # Make sure we're not caching the connection
